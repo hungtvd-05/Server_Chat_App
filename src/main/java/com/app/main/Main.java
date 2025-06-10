@@ -18,8 +18,8 @@ public class Main extends javax.swing.JFrame {
         
         try {
             HibernateUtil.getSessionFactory();
-            UserDAO userDAO = new UserDAO();
-            userDAO.save(new User("Ngô Anh Khôi", "ngoanhkhoi978","123","123","123")).join();
+//            UserDAO userDAO = new UserDAO();
+//            userDAO.save(new User("Ngô Anh Khôi", "ngoanhkhoi978","123","123","123")).join();
         } catch (Exception e) {
             
         }

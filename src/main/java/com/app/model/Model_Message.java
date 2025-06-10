@@ -12,4 +12,5 @@ import lombok.Setter;
 public class Model_Message {
     private boolean action;
     private String message;
+    private Object data;
 }
