@@ -1,7 +1,10 @@
 package com.app.main;
 
 import com.app.connection.DatabaseConnection;
+import com.app.dao.UserDAO;
+import com.app.model.User;
 import com.app.service.Service;
+import com.app.util.HibernateUtil;
 import com.formdev.flatlaf.FlatLightLaf;
 import javax.swing.UIManager;
 
@@ -11,6 +14,16 @@ public class Main extends javax.swing.JFrame {
 
     public Main() {
         initComponents();
+        
+        
+        try {
+            HibernateUtil.getSessionFactory();
+            UserDAO userDAO = new UserDAO();
+            userDAO.save(new User("Ngô Anh Khôi", "ngoanhkhoi978","123","123","123")).join();
+        } catch (Exception e) {
+            
+        }
+        
     }
 
     @SuppressWarnings("unchecked")

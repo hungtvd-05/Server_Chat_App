@@ -1,9 +1,12 @@
 com\app\service\ServiceUser.class
 com\app\main\Main$1.class
-com\app\connection\DatabaseConnection.class
+com\app\model\User.class
 com\app\service\Service$2.class
-com\app\service\Service$1.class
-com\app\model\Model_Register.class
 com\app\service\Service.class
 com\app\main\Main.class
 com\app\model\Model_Message.class
+com\app\dao\UserDAO.class
+com\app\connection\DatabaseConnection.class
+com\app\util\HibernateUtil.class
+com\app\service\Service$1.class
+com\app\model\Model_Register.class
