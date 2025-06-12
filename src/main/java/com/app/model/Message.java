@@ -31,7 +31,7 @@ public class Message {
     @Column(name = "to_user_id")
     private Long toUserID;
     
-    @Column(name = "message_content")
+    @Column(name = "message_content", columnDefinition = "TEXT")
     private String content;
     
     @Column(name = "file_extenssion")

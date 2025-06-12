@@ -23,6 +23,7 @@ import com.corundumstudio.socketio.listener.DataListener;
 import com.corundumstudio.socketio.listener.DisconnectListener;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.List;
 import javax.swing.JTextArea;
 
@@ -56,6 +57,7 @@ public class Service {
     public void startServer() {
         Configuration config = new Configuration();
         config.setPort(PORT_NUMBER);
+        config.setMaxFramePayloadLength(10 * 1024 * 1024);
         server = new SocketIOServer(config);
         server.addConnectListener(new ConnectListener() {
             @Override
@@ -120,44 +122,80 @@ public class Service {
         });
         server.addEventListener("send_file", Model_Package_Sender.class, new DataListener<Model_Package_Sender>() {
             @Override
-            public void onData(SocketIOClient sioc, Model_Package_Sender t, AckRequest ar) throws Exception {
+            public void onData(SocketIOClient sioc, Model_Package_Sender t, AckRequest ar) {
                 try {
                     serviceFile.receiveFile(t);
+                    ar.sendAckData(true);
                     if (t.isFinish()) {
-                        ar.sendAckData(true);
                         Model_Receive_Image dataImage = new Model_Receive_Image();
                         dataImage.setFileID(t.getFileID());
                         Model_Send_Message message = serviceFile.closeFile(dataImage);
                         sendTempFileToClient(message, dataImage);
-                    } else {
-                        ar.sendAckData(true);
                     }
-                } catch (Exception e) {
-                    ar.sendAckData(false);
+                } catch (IOException e) {
+                    System.err.println("Error receiving chunk for fileID " + t.getFileID() + ": " + e.getMessage());
+                    ar.sendAckData(false, e.getMessage());
                 }
             }
         });
+//        server.addEventListener("get_file", Long.class, new DataListener<Long>() {
+//            @Override
+//            public void onData(SocketIOClient sioc, Long t, AckRequest ar) throws Exception {
+//                try {
+//                    System.out.println("Requesting file info for fileID: " + t);
+//                    Model_File file = serviceFile.initFile(t);
+//                    long fileSize = serviceFile.getFileSize(t);
+//                    String fileExtension = file.getFileExtension();
+//                    if (!fileExtension.startsWith(".")) {
+//                        fileExtension = "." + fileExtension;
+//                    }
+//                    System.out.println("Sending file info: extension=" + fileExtension + ", size=" + fileSize);
+//                    ar.sendAckData(fileExtension, fileSize);
+//                } catch (Exception e) {
+//                    System.err.println("Error in get_file: " + e.getMessage());
+//                    ar.sendAckData("error", e.getMessage());
+//                }
+//            }
+//        });
+
         server.addEventListener("get_file", Long.class, new DataListener<Long>() {
             @Override
-            public void onData(SocketIOClient sioc, Long t, AckRequest ar) throws Exception {
-                System.out.println("dang lay anh");
-                Model_File file = serviceFile.initFile(t);
-                long fileSize = serviceFile.getFileSize(t);
-                ar.sendAckData(file.getFileExtension(), fileSize);
+            public void onData(SocketIOClient client, Long fileID, AckRequest ar) {
+                try {
+                    System.out.println("Requesting file info for fileID: " + fileID);
+                    Model_File file = serviceFile.initFile(fileID);
+                    long fileSize = serviceFile.getFileSize(fileID);
+                    String fileExtension = file.getFileExtension();
+                    if (!fileExtension.startsWith(".")) {
+                        fileExtension = "." + fileExtension;
+                    }
+//                    System.out.println("Sending file info: extension=" + fileExtension + ", size=" + fileSize);
+
+                    ar.sendAckData(fileExtension, fileSize);
+                } catch (Exception e) {
+                    System.err.println("Error in get_file: " + e.getMessage());
+                    ar.sendAckData("error", e.getMessage());
+                }
             }
         });
+
         server.addEventListener("reques_file", Model_Reques_File.class, new DataListener<Model_Reques_File>() {
             @Override
-            public void onData(SocketIOClient sioc, Model_Reques_File t, AckRequest ar) throws Exception {
-                System.out.println("dang yeu cau");
-                byte[] data = serviceFile.getFileData(t.getCurrentLength(), t.getFileID());
-                System.out.println(data);
-                if (data != null) {
-                    System.out.println("dang truyen");
-                    ar.sendAckData(data);
-                } else {
-                    System.out.println("end");
-                    ar.sendAckData();
+            public void onData(SocketIOClient sioc, Model_Reques_File t, AckRequest ar) {
+                try {
+                    System.out.println("Requesting chunk for fileID: " + t.getFileID() + ", offset: " + t.getCurrentLength());
+                    byte[] data = serviceFile.getFileData(t.getCurrentLength(), t.getFileID());
+                    if (data != null) {
+                        String base64Chunk = Base64.getEncoder().encodeToString(data);
+                        System.out.println("Sending Base64 chunk, length: " + base64Chunk.length());
+                        ar.sendAckData(base64Chunk);
+                    } else {
+                        System.out.println("End of file for fileID: " + t.getFileID());
+                        ar.sendAckData("eof");
+                    }
+                } catch (IOException e) {
+                    System.err.println("Error in reques_file: " + e.getMessage());
+                    ar.sendAckData("error", e.getMessage());
                 }
             }
         });

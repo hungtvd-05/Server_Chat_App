@@ -32,6 +32,7 @@ com\app\service\Service.class
 com\app\main\Main.class
 com\app\model\Model_Login.class
 com\app\model\Model_Message.class
+com\app\model\FileReceiver.class
 com\app\model\Model_Reques_File.class
 com\app\service\Service$3.class
 com\app\model\Model_File_Receiver.class
