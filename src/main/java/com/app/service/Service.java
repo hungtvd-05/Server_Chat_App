@@ -58,6 +58,7 @@ public class Service {
         Configuration config = new Configuration();
         config.setPort(PORT_NUMBER);
         config.setMaxFramePayloadLength(10 * 1024 * 1024);
+        config.setPingTimeout(30000);
         server = new SocketIOServer(config);
         server.addConnectListener(new ConnectListener() {
             @Override
@@ -127,6 +128,7 @@ public class Service {
                     serviceFile.receiveFile(t);
                     ar.sendAckData(true);
                     if (t.isFinish()) {
+                        textArea.append("da nhan anh thanh cong");
                         Model_Receive_Image dataImage = new Model_Receive_Image();
                         dataImage.setFileID(t.getFileID());
                         Model_Send_Message message = serviceFile.closeFile(dataImage);
