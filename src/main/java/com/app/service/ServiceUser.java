@@ -18,7 +18,7 @@ public class ServiceUser {
 
     public Model_Message register(Model_Register data) {
         Model_Message message = new Model_Message();
-        System.out.println("a2");
+//        System.out.println("a2");
         try {
             User user = userDAO.findByUsernameOrEmail(data.getUserName(), data.getMail()).join(); 
             if (user != null) {
@@ -44,20 +44,20 @@ public class ServiceUser {
             message.setAction(false);
             message.setMessage("Lỗi máy chủ: " + e.getMessage());
         }
-        System.out.println(message.getMessage());
+//        System.out.println(message.getMessage());
         return message;
     }
     
     public TestUserAccount login(Model_Login login) {
         User user = userDAO.findByUsernameOrEmail(login.getUsername(), login.getUsername()).join(); 
         if (user != null) {
-            System.out.println("check");
+//            System.out.println("check");
             if (BCrypt.checkpw(login.getPassword(), user.getPassword())) {
                 return new TestUserAccount(user.getUserId(), user.getUsername(), user.getUserAccount().getFullName(), user.getMail(), user.getUserAccount().getPhone(), user.getUserAccount().getGender(), true, user.getUserAccount().getImage());
             }
         } else {
-            System.out.println(login.getUsername());
-            System.out.println("loi");
+//            System.out.println(login.getUsername());
+//            System.out.println("loi");
         }
         return null;
     }
@@ -67,7 +67,7 @@ public class ServiceUser {
         try {
             list = userDAO.getActiveUserAccountsExcludingId(exitUser).join();
         } catch (Exception e) {
-            System.err.println(e.getMessage());
+//            System.err.println(e.getMessage());
         }        
         return list;
     }

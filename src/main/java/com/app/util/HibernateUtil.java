@@ -1,5 +1,6 @@
 package com.app.util;
 
+import com.app.model.Message;
 import com.app.model.User;
 import com.app.model.UserAccount;
 import org.hibernate.SessionFactory;
@@ -24,6 +25,7 @@ public class HibernateUtil {
                                 .configure()
                                 .addAnnotatedClass(User.class)
                                 .addAnnotatedClass(UserAccount.class)
+                                .addAnnotatedClass(Message.class)
                                 .buildSessionFactory();
                         logger.info("SessionFactory created successfully");
                     } catch (Exception e) {

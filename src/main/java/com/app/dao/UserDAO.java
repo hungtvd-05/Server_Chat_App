@@ -2,7 +2,6 @@ package com.app.dao;
 
 import com.app.model.TestUserAccount;
 import com.app.model.User;
-import com.app.model.UserAccount;
 import com.app.util.HibernateUtil;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
