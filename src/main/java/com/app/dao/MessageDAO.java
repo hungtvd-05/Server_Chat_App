@@ -60,6 +60,7 @@ public class MessageDAO {
                     List<Message> mss = query.getResultList();
                     List<Model_Send_Message> dtoList = mss.stream()
                             .map(msg -> new Model_Send_Message(
+                            msg.getId(),
                             msg.getMessageType(),
                             msg.getFromUserID(),
                             msg.getToUserID(),

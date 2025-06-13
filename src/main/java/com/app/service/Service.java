@@ -112,6 +112,7 @@ public class Service {
         server.addEventListener("send_to_user", Model_Send_Message.class, new DataListener<Model_Send_Message>() {
             @Override
             public void onData(SocketIOClient sioc, Model_Send_Message t, AckRequest ar) throws Exception {
+                textArea.append("1 yeu cau gui tin nhan");
                 sendToClient(t, ar);
             }
         });

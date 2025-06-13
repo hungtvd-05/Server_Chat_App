@@ -5,9 +5,9 @@
     <session-factory>
         <property name="hibernate.dialect">org.hibernate.dialect.MySQLDialect</property>
         <property name="connection.driver_class">com.mysql.jdbc.Driver</property>
-        <property name="connection.url">jdbc:mysql://26.73.222.249:3306/chat_app</property>
+        <property name="connection.url">jdbc:mysql://127.0.0.1/chat_app</property>
         <property name="connection.username">root</property>
-        <property name="connection.password">Ab123456</property>
+        <property name="connection.password">123</property>
 
         <property name="hibernate.hbm2ddl.auto">update</property>
 

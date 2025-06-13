@@ -8,6 +8,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 public class Model_Send_Message {
+    private long id;
     private int messageType;
     private Long fromUserID;
     private Long toUserID;
