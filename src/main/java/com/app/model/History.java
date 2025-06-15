@@ -10,4 +10,5 @@ import lombok.NoArgsConstructor;
 public class History {
     private Long fromUserID;
     private Long toUserID;
+    private Long fromMessageID;
 }

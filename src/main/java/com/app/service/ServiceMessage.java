@@ -10,14 +10,14 @@ import java.util.List;
 public class ServiceMessage {
     private MessageDAO messageDAO = new MessageDAO();
     
-    public void addMessage(Model_Send_Message ms) {
+    public Message addMessage(Model_Send_Message ms) {
 //        System.out.println("1111111");
-        messageDAO.addMessage(new Message(
-                ms.getMessageType(), ms.getFromUserID(), ms.getToUserID(), ms.getContent(), LocalDateTime.now()
-        ));
+        return messageDAO.saveandgetMessage(new Message(
+                ms.getMessageType(), ms.getFromUserID(), ms.getToUserID(), ms.getEncryptedContent(), ms.getSignature(), ms.getEncryptedAESKey(), LocalDateTime.now()
+        )).join();
     }
     
     public List<Model_Send_Message> getHistoryMessage(History h) {
-        return messageDAO.getHistoryMessage(h.getFromUserID(), h.getToUserID()).join();
+        return messageDAO.getHistoryMessage(h.getFromUserID(), h.getToUserID(), h.getFromMessageID()).join();
     }
 }

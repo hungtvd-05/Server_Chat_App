@@ -2,6 +2,7 @@ package com.app.dao;
 
 import com.app.model.Message;
 import com.app.model.Model_Send_Message;
+import com.app.model.User;
 import com.app.util.HibernateUtil;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -11,6 +12,8 @@ import org.hibernate.Transaction;
 import org.hibernate.query.Query;
 
 public class MessageDAO {
+
+    private UserDAO userDAO = new UserDAO();
 
     public CompletableFuture<Void> addMessage(Message ms) {
         return CompletableFuture.runAsync(() -> {
@@ -30,8 +33,13 @@ public class MessageDAO {
 
     public CompletableFuture<Message> saveandgetMessage(Message ms) {
         return CompletableFuture.supplyAsync(() -> {
+            User user = userDAO.findById(ms.getFromUserID()).join();
+            if (user == null) {
+                return null;
+            }
             Transaction transaction = null;
             try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+                ms.setPublicKeyDSAFromUser(user.getUserAccount().getPubkeyDSA());
                 transaction = session.beginTransaction();
                 session.persist(ms);
                 session.flush();
@@ -46,17 +54,19 @@ public class MessageDAO {
         });
     }
 
-    public CompletableFuture<List<Model_Send_Message>> getHistoryMessage(Long fromUserID, Long toUserID) {
+    public CompletableFuture<List<Model_Send_Message>> getHistoryMessage(Long fromUserID, Long toUserID, Long fromMessageID) {
         return CompletableFuture.supplyAsync(() -> {
             try (Session session = HibernateUtil.getSessionFactory().openSession()) {
                 Transaction transaction = session.beginTransaction();
                 try {
                     String hql = "FROM Message m "
-                            + "WHERE (m.fromUserID = :fromUserID AND m.toUserID = :toUserID) "
-                            + "OR (m.fromUserID = :toUserID AND m.toUserID = :fromUserID) ";
+                            + "WHERE ((m.fromUserID = :fromUserID AND m.toUserID = :toUserID) "
+                            + "OR (m.fromUserID = :toUserID AND m.toUserID = :fromUserID)) "
+                            + "AND m.id > :fromMessageID";
                     Query<Message> query = session.createQuery(hql, Message.class);
                     query.setParameter("fromUserID", fromUserID);
                     query.setParameter("toUserID", toUserID);
+                    query.setParameter("fromMessageID", fromMessageID);
                     List<Message> mss = query.getResultList();
                     List<Model_Send_Message> dtoList = mss.stream()
                             .map(msg -> new Model_Send_Message(
@@ -64,7 +74,10 @@ public class MessageDAO {
                             msg.getMessageType(),
                             msg.getFromUserID(),
                             msg.getToUserID(),
-                            msg.getContent(),
+                            msg.getEncryptedContent(),
+                            msg.getSignature(),
+                            msg.getEncryptedAESKey(),
+                            msg.getPublicKeyDSAFromUser(),
                             msg.getFileExtension(),
                             msg.getBlurHash(),
                             msg.getHeight_blur(),
@@ -103,7 +116,7 @@ public class MessageDAO {
             }
         });
     }
-    
+
     public CompletableFuture<Message> getFile(Long id) {
         return CompletableFuture.supplyAsync(() -> {
             try (Session session = HibernateUtil.getSessionFactory().openSession()) {
@@ -112,7 +125,7 @@ public class MessageDAO {
                     String hql = "FROM Message m WHERE m.id = :id";
                     Query<Message> query = session.createQuery(hql, Message.class);
                     query.setParameter("id", id);
-                    query.setMaxResults(1); 
+                    query.setMaxResults(1);
                     Message ms = query.uniqueResult();
                     transaction.commit();
                     return ms;

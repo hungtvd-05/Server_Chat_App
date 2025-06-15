@@ -16,4 +16,6 @@ public class TestUserAccount {
     private String gender;
     private boolean status;
     private String image;
+    private String pubkeyDSA; 
+    private String pubkeyRSA;
 }

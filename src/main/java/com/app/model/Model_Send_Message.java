@@ -12,7 +12,10 @@ public class Model_Send_Message {
     private int messageType;
     private Long fromUserID;
     private Long toUserID;
-    private String content;
+    private String encryptedContent;
+    private String signature;
+    private String encryptedAESKey;
+    private String pubkeyDSAFromUser;
     private String fileExtension;
     private String blurHash;
     private int height_blur;

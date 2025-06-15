@@ -16,5 +16,7 @@ public class Model_Register {
     private String fullName;
     private String mail;
     private String phone;
+    private String pubkeyDSA; 
+    private String pubkeyRSA;
 
 }

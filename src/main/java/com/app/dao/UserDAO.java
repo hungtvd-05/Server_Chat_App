@@ -18,7 +18,7 @@ public class UserDAO {
                 transaction = session.beginTransaction();
                 session.persist(user);
                 transaction.commit();
-                return user; 
+                return user;
             } catch (Exception e) {
                 if (transaction != null && transaction.isActive()) {
                     HibernateUtil.rollbackTransaction(transaction);
@@ -27,7 +27,6 @@ public class UserDAO {
             }
         });
     }
-
 
     public CompletableFuture<User> findByUsernameOrEmail(String username, String email) {
         return CompletableFuture.supplyAsync(() -> {
@@ -38,7 +37,7 @@ public class UserDAO {
                     Query<User> query = session.createQuery(hql, User.class);
                     query.setParameter("username", username);
                     query.setParameter("mail", email);
-                    query.setMaxResults(1); 
+                    query.setMaxResults(1);
                     User user = query.uniqueResult();
                     transaction.commit();
                     return user;
@@ -51,7 +50,25 @@ public class UserDAO {
             }
         });
     }
-    
+
+    public CompletableFuture<User> findById(Long userId) {
+        return CompletableFuture.supplyAsync(() -> {
+            try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+                Transaction transaction = session.beginTransaction();
+                try {
+                    User user = session.get(User.class, userId);
+                    transaction.commit();
+                    return user;
+                } catch (Exception e) {
+                    if (transaction != null && transaction.isActive()) {
+                        transaction.rollback();
+                    }
+                    throw new RuntimeException("Lỗi khi tìm User theo ID: " + e.getMessage(), e);
+                }
+            }
+        });
+    }
+
 //    public CompletableFuture<List<UserAccount>> getActiveUserAccountsExcludingId(Long excludeId) {
 //        return CompletableFuture.supplyAsync(() -> {
 //            try (Session session = HibernateUtil.getSessionFactory().openSession()) {
@@ -75,16 +92,15 @@ public class UserDAO {
 //            }
 //        });
 //    }
-    
     public CompletableFuture<List<TestUserAccount>> getActiveUserAccountsExcludingId(Long excludeId) {
         return CompletableFuture.supplyAsync(() -> {
             try (Session session = HibernateUtil.getSessionFactory().openSession()) {
                 Transaction transaction = session.beginTransaction();
                 try {
-                    String hql = "SELECT new com.app.model.TestUserAccount(" +
-                                 "ua.userId, ua.username, ua.fullName, ua.mail, ua.phone, ua.gender, ua.status, ua.image) " +
-                                 "FROM UserAccount ua " +
-                                 "WHERE ua.userId != :excludeId";
+                    String hql = "SELECT new com.app.model.TestUserAccount("
+                            + "ua.userId, ua.username, ua.fullName, ua.mail, ua.phone, ua.gender, ua.status, ua.image, ua.pubkeyDSA, ua.pubkeyRSA) "
+                            + "FROM UserAccount ua "
+                            + "WHERE ua.userId != :excludeId";
                     Query<TestUserAccount> query = session.createQuery(hql, TestUserAccount.class);
 //                    query.setParameter("status", true);
                     query.setParameter("excludeId", excludeId);
@@ -100,7 +116,7 @@ public class UserDAO {
             }
         });
     }
-    
+
     public void updateStatus(Long userId, Boolean status) {
         Transaction transaction = null;
         try (Session session = HibernateUtil.getSessionFactory().openSession()) {
@@ -121,7 +137,7 @@ public class UserDAO {
             throw new RuntimeException("Lỗi khi cập nhật trạng thái: " + e.getMessage(), e);
         }
     }
-    
+
     public void updateAllStatus() {
         Transaction transaction = null;
         try (Session session = HibernateUtil.getSessionFactory().openSession()) {
@@ -137,5 +153,27 @@ public class UserDAO {
             }
             throw new RuntimeException("Lỗi khi cập nhật trạng thái: " + e.getMessage(), e);
         }
+    }
+
+    public CompletableFuture<Void> changeKey(Long userId, String pubkeyDSA, String pubkeyRSA) {
+        return CompletableFuture.runAsync(() -> {
+
+            Transaction transaction = null;
+            try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+                transaction = session.beginTransaction();
+                String hql = "UPDATE UserAccount ua SET ua.pubkeyDSA = :pubkeyDSA, ua.pubkeyRSA = :pubkeyRSA WHERE ua.userId = :userId";
+                Query<?> query = session.createQuery(hql);
+                query.setParameter("pubkeyDSA", pubkeyDSA);
+                query.setParameter("pubkeyRSA", pubkeyRSA);
+                query.setParameter("userId", userId);
+                System.out.println("thay doi key");
+                query.executeUpdate();
+            } catch (Exception e) {
+                if (transaction != null && transaction.isActive()) {
+                    HibernateUtil.rollbackTransaction(transaction);
+                }
+                throw new RuntimeException(e.getMessage(), e);
+            }
+        });
     }
 }

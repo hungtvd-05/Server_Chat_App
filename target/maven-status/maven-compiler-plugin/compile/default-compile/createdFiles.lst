@@ -1,7 +1,9 @@
 com\app\model\Model_Package_Sender.class
 com\app\service\Service$10.class
 com\app\model\History.class
+com\app\model\Model_Status.class
 com\app\app\MessageType.class
+com\app\model\Model_Public_Key.class
 com\app\service\Service$6.class
 com\app\model\User.class
 com\app\service\Service$8.class
@@ -27,6 +29,7 @@ com\app\dao\MessageDAO.class
 com\app\model\Model_Receive_Message.class
 com\app\service\Service$2.class
 com\app\service\ServiceMessage.class
+com\app\service\Service$11.class
 com\app\service\Service$7.class
 com\app\service\Service.class
 com\app\main\Main.class

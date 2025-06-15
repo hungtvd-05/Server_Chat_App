@@ -35,7 +35,9 @@ public class ServiceFile {
                 data.getMessageType(),
                 data.getFromUserID(),
                 data.getToUserID(),
-                data.getContent(),
+                data.getEncryptedContent(),
+                data.getSignature(),
+                data.getEncryptedAESKey(),                
                 data.getFileExtension(),
                 data.getBlurHash(),
                 LocalDateTime.parse(data.getTime())
@@ -83,11 +85,17 @@ public class ServiceFile {
     public Model_Send_Message closeFile(Model_Receive_Image dataImage) throws IOException {
         Model_File_Receiver file = fileReceivers.get(dataImage.getFileID());
         if (file.getMessage().getMessageType() == MessageType.IMAGE.getValue()) {
-            file.getMessage().setContent("");
+            file.getMessage().setEncryptedContent("");
+            file.getMessage().setEncryptedAESKey("");
+            file.getMessage().setSignature("");
             convertFileToBlurHash(file.getFile(), dataImage);
             messageDAO.updateBlur(dataImage.getFileID(), dataImage.getImage(), dataImage.getHeight(), dataImage.getWidth());
         }
         fileReceivers.remove(dataImage.getFileID());
+        file.getMessage().setId(dataImage.getFileID());
+        file.getMessage().setBlurHash(dataImage.getImage());
+        file.getMessage().setHeight_blur(dataImage.getHeight());
+        file.getMessage().setWidth_blur(dataImage.getWidth());
         return file.getMessage();
     }
 

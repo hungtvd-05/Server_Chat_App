@@ -49,17 +49,38 @@ public class UserAccount {
     
     @Column(name = "image")
     private String image;
+    
+    @Column(name = "public_key_dsa", columnDefinition = "TEXT")
+    private String pubkeyDSA; 
+    
+    @Column(name = "public_key_rsa", columnDefinition = "TEXT")
+    private String pubkeyRSA;
 
-    public UserAccount(User user, String fullName, String username, String mail, String phone, String gender, String image, Boolean status) {
+//    public UserAccount(User user, String fullName, String username, String mail, String phone, String gender, String image, Boolean status) {
+//        this.user = user;
+//        this.fullName = fullName;
+//        this.username = username;
+//        this.mail = mail;
+//        this.phone = phone;
+//        this.gender = gender;
+//        this.image = image;
+//        this.status = status;
+//    }
+
+    public UserAccount(User user, String fullName, String username, String mail, String phone, String gender, String image, Boolean status, String pubkeyDSA, String pubkeyRSA) {
         this.user = user;
         this.fullName = fullName;
         this.username = username;
         this.mail = mail;
         this.phone = phone;
         this.gender = gender;
-        this.image = image;
         this.status = status;
+        this.image = image;
+        this.pubkeyDSA = pubkeyDSA;
+        this.pubkeyRSA = pubkeyRSA;
     }
+    
+    
     
     
     

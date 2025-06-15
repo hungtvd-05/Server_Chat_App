@@ -10,6 +10,7 @@ import lombok.NoArgsConstructor;
 public class Model_Receive_Image {
     private Long fileID;
     private String image;
+    private String fileExtension;
     private int width;
     private int height;
 }

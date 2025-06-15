@@ -28,11 +28,20 @@ public class Message {
     @Column(name = "from_user_id")
     private Long fromUserID;
     
+    @Column(name = "public_key_dsa_from_user", columnDefinition = "TEXT")
+    private String publicKeyDSAFromUser;
+    
     @Column(name = "to_user_id")
     private Long toUserID;
     
-    @Column(name = "message_content", columnDefinition = "TEXT")
-    private String content;
+    @Column(name = "encrypted_content", columnDefinition = "TEXT")
+    private String encryptedContent;
+    
+    @Column(name = "signature", columnDefinition = "TEXT")
+    private String signature;
+    
+    @Column(name = "encrypted_aes_key", columnDefinition = "TEXT")
+    private String encryptedAESKey;
     
     @Column(name = "file_extenssion")
     private String fileExtension;
@@ -49,21 +58,25 @@ public class Message {
     @Column(name = "sent_at")
     private LocalDateTime time;
 
-    public Message(int messageType, Long fromUserID, Long toUserID, String content, LocalDateTime time) {
+    public Message(int messageType, Long fromUserID, Long toUserID, String encryptedContent, String signature, String encryptedAESKey, LocalDateTime time) {
         this.messageType = messageType;
         this.fromUserID = fromUserID;
         this.toUserID = toUserID;
-        this.content = content;
+        this.encryptedContent = encryptedContent;
+        this.signature = signature;
+        this.encryptedAESKey = encryptedAESKey;
         this.fileExtension = "";
         this.blurHash = "";
         this.time = time;
     }
-
-    public Message(int messageType, Long fromUserID, Long toUserID, String content, String fileExtension, String blurHash, LocalDateTime time) {
+    
+    public Message(int messageType, Long fromUserID, Long toUserID, String encryptedContent, String signature, String encryptedAESKey, String fileExtension, String blurHash, LocalDateTime time) {
         this.messageType = messageType;
         this.fromUserID = fromUserID;
         this.toUserID = toUserID;
-        this.content = content;
+        this.encryptedContent = encryptedContent;
+        this.signature = signature;
+        this.encryptedAESKey = encryptedAESKey;
         this.fileExtension = fileExtension;
         this.blurHash = blurHash;
         this.time = time;

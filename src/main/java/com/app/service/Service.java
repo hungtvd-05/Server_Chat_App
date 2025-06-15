@@ -8,12 +8,14 @@ import com.app.model.Model_File;
 import com.app.model.Model_Login;
 import com.app.model.Model_Message;
 import com.app.model.Model_Package_Sender;
+import com.app.model.Model_Public_Key;
 import com.app.model.Model_Receive_Image;
 import com.app.model.Model_Receive_Message;
 import com.app.model.Model_Register;
 import com.app.model.Model_Reques_File;
 import com.app.model.Model_Send_Message;
 import com.app.model.TestUserAccount;
+import com.app.model.User;
 import com.corundumstudio.socketio.AckRequest;
 import com.corundumstudio.socketio.Configuration;
 import com.corundumstudio.socketio.SocketIOClient;
@@ -72,7 +74,6 @@ public class Service {
                 Model_Message message = serviceUser.register(t);
                 ar.sendAckData(message.isAction(), message.getMessage(), message.getData());
                 if (message.isAction()) {
-                    textArea.append("User register: " + t.getUserName() + ", Password: " + t.getPassword() + ", Fullname: " + t.getFullName() + ", Mail: " + t.getMail() + ", Phone: " + t.getPhone() + "\n");
                     TestUserAccount medata = (TestUserAccount) message.getData();
                     server.getBroadcastOperations().sendEvent("list_user", medata);
                     addClient(sioc, medata);
@@ -90,11 +91,18 @@ public class Service {
                     textArea.append("Mot may da dang nhap\n");
                     ar.sendAckData(true, login);
                     addClient(sioc, login);
-                    userConnect(login.getUserId());
+//                    userConnect(login.getUserId());
                 } else {
                     textArea.append("Mot may da dang nhap that bai\n");
                     ar.sendAckData(false);
                 }
+            }
+        });
+        server.addEventListener("change_key", Model_Public_Key.class, new DataListener<Model_Public_Key>() {
+            @Override
+            public void onData(SocketIOClient sioc, Model_Public_Key t, AckRequest ar) throws Exception {
+                serviceUser.changePublicKey(t);
+                userConnect(t.getUserID());
             }
         });
         server.addEventListener("list_user", Long.class, new DataListener<Long>() {
@@ -131,8 +139,12 @@ public class Service {
                     if (t.isFinish()) {
                         textArea.append("da nhan anh thanh cong");
                         Model_Receive_Image dataImage = new Model_Receive_Image();
-                        dataImage.setFileID(t.getFileID());
+                        dataImage.setFileID(t.getFileID());                        
                         Model_Send_Message message = serviceFile.closeFile(dataImage);
+                        dataImage.setFileExtension(message.getFileExtension());
+                        System.out.println(message);
+                        sioc.sendEvent("file_completed", message);
+                        
                         sendTempFileToClient(message, dataImage);
                     }
                 } catch (IOException e) {
@@ -219,12 +231,15 @@ public class Service {
 
     private void userConnect(long userID) {
         serviceUser.updateStatus(true, userID);
-        server.getBroadcastOperations().sendEvent("user_status", Long.valueOf(userID), true);
+        User user = serviceUser.getUserById(userID);
+        if (user != null) {
+            server.getBroadcastOperations().sendEvent("user_status", Long.valueOf(userID), true, user.getUserAccount().getPubkeyDSA(), user.getUserAccount().getPubkeyRSA());
+        }
     }
 
     private void userDisconnect(long userID) {
         serviceUser.updateStatus(false, userID);
-        server.getBroadcastOperations().sendEvent("user_status", Long.valueOf(userID), false);
+        server.getBroadcastOperations().sendEvent("user_status", Long.valueOf(userID), false, "", "");
     }
 
     private void addClient(SocketIOClient client, TestUserAccount user) {
@@ -251,21 +266,25 @@ public class Service {
                 e.printStackTrace();
             }
         } else {
+
+            Message saveMessage = serviceMessage.addMessage(data);
+
+            ar.sendAckData(saveMessage.getId());
+
             for (Model_Client c : listClient) {
                 if (c.getUser().getUserId() == data.getToUserID()) {
-                    c.getClient().sendEvent("receive_ms", new Model_Receive_Message(data.getMessageType(), data.getFromUserID(), data.getContent(), null, data.getTime()));
-                    textArea.append(data.getContent() + "\n");
+                    c.getClient().sendEvent("receive_ms", new Model_Receive_Message(saveMessage.getId(), data.getMessageType(), data.getFromUserID(), data.getToUserID(), data.getEncryptedContent(), data.getSignature(), data.getEncryptedAESKey(), saveMessage.getPublicKeyDSAFromUser(), null, data.getTime()));
+                    textArea.append(data.getEncryptedContent() + "\n");
                     break;
                 }
             }
-            serviceMessage.addMessage(data);
         }
     }
 
     private void sendTempFileToClient(Model_Send_Message data, Model_Receive_Image dataImage) {
         for (Model_Client c : listClient) {
             if (c.getUser().getUserId() == data.getToUserID()) {
-                c.getClient().sendEvent("receive_ms", new Model_Receive_Message(data.getMessageType(), data.getFromUserID(), data.getContent(), dataImage, data.getTime()));
+                c.getClient().sendEvent("receive_ms", new Model_Receive_Message(data.getId(), data.getMessageType(), data.getFromUserID(), data.getToUserID(), data.getEncryptedContent(), data.getSignature(), data.getEncryptedAESKey(), c.getUser().getPubkeyDSA(), dataImage, data.getTime()));
                 break;
             }
         }
