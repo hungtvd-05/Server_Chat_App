@@ -9,7 +9,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 public class Model_Package_Sender {
     private Long fileID;
-    private byte[] data;
+    private String data;
     private boolean finish;
 
 }

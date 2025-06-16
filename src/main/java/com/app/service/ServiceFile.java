@@ -16,6 +16,7 @@ import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
 import java.time.LocalDateTime;
+import java.util.Base64;
 import java.util.HashMap;
 import java.util.Map;
 import javax.imageio.ImageIO;
@@ -76,7 +77,7 @@ public class ServiceFile {
 
     public void receiveFile(Model_Package_Sender dataPackage) throws IOException {
         if (!dataPackage.isFinish()) {
-            fileReceivers.get(dataPackage.getFileID()).writeFile(dataPackage.getData());
+            fileReceivers.get(dataPackage.getFileID()).writeFile(Base64.getDecoder().decode(dataPackage.getData()));
         } else {
             fileReceivers.get(dataPackage.getFileID()).close();
         }
