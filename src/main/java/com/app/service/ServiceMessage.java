@@ -20,4 +20,8 @@ public class ServiceMessage {
     public List<Model_Send_Message> getHistoryMessage(History h) {
         return messageDAO.getHistoryMessage(h.getFromUserID(), h.getToUserID(), h.getFromMessageID()).join();
     }
+    
+    public Message getMessageById(Long id) {
+        return messageDAO.getFile(id).join();
+    }
 }

@@ -37,6 +37,7 @@ com\app\model\Model_Message.class
 com\app\model\FileReceiver.class
 com\app\model\Model_Reques_File.class
 com\app\service\Service$3.class
+com\app\service\Service$12.class
 com\app\model\Model_File_Receiver.class
 com\app\util\HibernateUtil.class
 com\app\model\Model_Register.class

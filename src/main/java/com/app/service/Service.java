@@ -172,14 +172,36 @@ public class Service {
             public void onData(SocketIOClient client, Long fileID, AckRequest ar) {
                 try {
                     Model_File file = serviceFile.initFile(fileID);
-                    System.out.println(file.getFileExtension());
                     long fileSize = serviceFile.getFileSize(fileID);
-                    System.out.println("check fileSize: " + fileSize);
                     String fileExtension = file.getFileExtension();
                     ar.sendAckData(fileExtension, fileSize);
                 } catch (Exception e) {
                     ar.sendAckData("error", e.getMessage());
                 }
+            }
+        });
+        
+        server.addEventListener("get_message_by_id", Long.class, new DataListener<Long>() {
+            @Override
+            public void onData(SocketIOClient client, Long fileID, AckRequest ar) {
+                System.out.println("yeu cau id " + fileID);
+                Message ms = serviceMessage.getMessageById(fileID);
+                System.out.println(ms);
+                ar.sendAckData(new Model_Send_Message(
+                        ms.getId(),
+                        ms.getMessageType(),
+                        ms.getFromUserID(),
+                        ms.getToUserID(),
+                        ms.getEncryptedContent(),
+                        ms.getSignature(),
+                        ms.getEncryptedAESKey(),
+                        ms.getPublicKeyDSAFromUser(),
+                        ms.getFileExtension(),
+                        ms.getBlurHash(),
+                        ms.getHeight_blur(),
+                        ms.getWidth_blur(),
+                        ms.getTime().toString()
+                ));
             }
         });
 
