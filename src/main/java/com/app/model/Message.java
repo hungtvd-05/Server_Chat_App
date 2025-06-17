@@ -70,7 +70,7 @@ public class Message {
         this.time = time;
     }
     
-    public Message(int messageType, Long fromUserID, Long toUserID, String encryptedContent, String signature, String encryptedAESKey, String fileExtension, String blurHash, LocalDateTime time) {
+    public Message(int messageType, Long fromUserID, Long toUserID, String encryptedContent, String signature, String encryptedAESKey, String fileExtension, String blurHash, int height_blur, int width_blur, LocalDateTime time) {
         this.messageType = messageType;
         this.fromUserID = fromUserID;
         this.toUserID = toUserID;
@@ -79,6 +79,8 @@ public class Message {
         this.encryptedAESKey = encryptedAESKey;
         this.fileExtension = fileExtension;
         this.blurHash = blurHash;
+        this.height_blur = height_blur;
+        this.width_blur = width_blur;
         this.time = time;
     }
     

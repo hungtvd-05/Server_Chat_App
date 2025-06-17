@@ -10,7 +10,6 @@ import com.app.model.Model_Message;
 import com.app.model.Model_Package_Sender;
 import com.app.model.Model_Public_Key;
 import com.app.model.Model_Receive_Image;
-import com.app.model.Model_Receive_Message;
 import com.app.model.Model_Register;
 import com.app.model.Model_Reques_File;
 import com.app.model.Model_Send_Message;
@@ -120,7 +119,7 @@ public class Service {
         server.addEventListener("send_to_user", Model_Send_Message.class, new DataListener<Model_Send_Message>() {
             @Override
             public void onData(SocketIOClient sioc, Model_Send_Message t, AckRequest ar) throws Exception {
-                textArea.append("1 yeu cau gui tin nhan");
+                System.out.println(t);
                 sendToClient(t, ar);
             }
         });
@@ -138,14 +137,9 @@ public class Service {
                     ar.sendAckData(true);
                     if (t.isFinish()) {
                         textArea.append("da nhan anh thanh cong");
-                        Model_Receive_Image dataImage = new Model_Receive_Image();
-                        dataImage.setFileID(t.getFileID());                        
-                        Model_Send_Message message = serviceFile.closeFile(dataImage);
-                        dataImage.setFileExtension(message.getFileExtension());
-                        System.out.println(message);
+                        Model_Send_Message message = serviceFile.closeFile(t.getFileID());
                         sioc.sendEvent("file_completed", message);
-                        
-                        sendTempFileToClient(message, dataImage);
+                        sendTempFileToClient(message);
                     }
                 } catch (IOException e) {
                     System.err.println("Error receiving chunk for fileID " + t.getFileID() + ": " + e.getMessage());
@@ -177,18 +171,13 @@ public class Service {
             @Override
             public void onData(SocketIOClient client, Long fileID, AckRequest ar) {
                 try {
-                    System.out.println("Requesting file info for fileID: " + fileID);
                     Model_File file = serviceFile.initFile(fileID);
+                    System.out.println(file.getFileExtension());
                     long fileSize = serviceFile.getFileSize(fileID);
+                    System.out.println("check fileSize: " + fileSize);
                     String fileExtension = file.getFileExtension();
-                    if (!fileExtension.startsWith(".")) {
-                        fileExtension = "." + fileExtension;
-                    }
-//                    System.out.println("Sending file info: extension=" + fileExtension + ", size=" + fileSize);
-
                     ar.sendAckData(fileExtension, fileSize);
                 } catch (Exception e) {
-                    System.err.println("Error in get_file: " + e.getMessage());
                     ar.sendAckData("error", e.getMessage());
                 }
             }
@@ -198,18 +187,14 @@ public class Service {
             @Override
             public void onData(SocketIOClient sioc, Model_Reques_File t, AckRequest ar) {
                 try {
-                    System.out.println("Requesting chunk for fileID: " + t.getFileID() + ", offset: " + t.getCurrentLength());
                     byte[] data = serviceFile.getFileData(t.getCurrentLength(), t.getFileID());
                     if (data != null) {
                         String base64Chunk = Base64.getEncoder().encodeToString(data);
-                        System.out.println("Sending Base64 chunk, length: " + base64Chunk.length());
                         ar.sendAckData(base64Chunk);
                     } else {
-                        System.out.println("End of file for fileID: " + t.getFileID());
                         ar.sendAckData("eof");
                     }
                 } catch (IOException e) {
-                    System.err.println("Error in reques_file: " + e.getMessage());
                     ar.sendAckData("error", e.getMessage());
                 }
             }
@@ -260,6 +245,7 @@ public class Service {
         if (data.getMessageType() == MessageType.IMAGE.getValue() || data.getMessageType() == MessageType.FILE.getValue()) {
             try {
                 Message file = serviceFile.addFileReceiver(data);
+                data.setPubkeyDSAFromUser(file.getPublicKeyDSAFromUser());
                 serviceFile.initFile(file, data);
                 ar.sendAckData(file.getId());
             } catch (IOException e) {
@@ -268,12 +254,15 @@ public class Service {
         } else {
 
             Message saveMessage = serviceMessage.addMessage(data);
-
+            
             ar.sendAckData(saveMessage.getId());
 
             for (Model_Client c : listClient) {
                 if (c.getUser().getUserId() == data.getToUserID()) {
-                    c.getClient().sendEvent("receive_ms", new Model_Receive_Message(saveMessage.getId(), data.getMessageType(), data.getFromUserID(), data.getToUserID(), data.getEncryptedContent(), data.getSignature(), data.getEncryptedAESKey(), saveMessage.getPublicKeyDSAFromUser(), null, data.getTime()));
+                    data.setId(saveMessage.getId());
+                    data.setPubkeyDSAFromUser(saveMessage.getPublicKeyDSAFromUser());
+                    System.out.println(data);
+                    c.getClient().sendEvent("receive_ms", data);
                     textArea.append(data.getEncryptedContent() + "\n");
                     break;
                 }
@@ -281,10 +270,13 @@ public class Service {
         }
     }
 
-    private void sendTempFileToClient(Model_Send_Message data, Model_Receive_Image dataImage) {
+    private void sendTempFileToClient(Model_Send_Message data) {
         for (Model_Client c : listClient) {
             if (c.getUser().getUserId() == data.getToUserID()) {
-                c.getClient().sendEvent("receive_ms", new Model_Receive_Message(data.getId(), data.getMessageType(), data.getFromUserID(), data.getToUserID(), data.getEncryptedContent(), data.getSignature(), data.getEncryptedAESKey(), c.getUser().getPubkeyDSA(), dataImage, data.getTime()));
+                
+                
+                
+                c.getClient().sendEvent("receive_ms", data);
                 break;
             }
         }

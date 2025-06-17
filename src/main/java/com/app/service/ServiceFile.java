@@ -1,6 +1,5 @@
 package com.app.service;
 
-import com.app.app.MessageType;
 import com.app.dao.MessageDAO;
 import com.app.model.Message;
 import com.app.model.Model_File;
@@ -9,17 +8,12 @@ import com.app.model.Model_File_Sender;
 import com.app.model.Model_Package_Sender;
 import com.app.model.Model_Receive_Image;
 import com.app.model.Model_Send_Message;
-import com.app.swing.blurHash.BlurHash;
-import java.awt.Dimension;
-import java.awt.Graphics2D;
-import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.Base64;
 import java.util.HashMap;
 import java.util.Map;
-import javax.imageio.ImageIO;
 
 public class ServiceFile {
 
@@ -41,8 +35,11 @@ public class ServiceFile {
                 data.getEncryptedAESKey(),                
                 data.getFileExtension(),
                 data.getBlurHash(),
+                data.getHeight_blur(),
+                data.getWidth_blur(),
                 LocalDateTime.parse(data.getTime())
         );
+        System.out.println(ms);
         return messageDAO.saveandgetMessage(ms).join();
     }
 
@@ -52,14 +49,14 @@ public class ServiceFile {
 
     public Model_File getFile(Long fileID) {
         Message ms = messageDAO.getFile(fileID).join();
-        return new Model_File(fileID, ms.getFileExtension());
+        return new Model_File(fileID, ".enc");
     }
 
     public synchronized Model_File initFile(Long fileID) throws IOException {
         Model_File file;
         if (!fileSenders.containsKey(fileID)) {
             file = getFile(fileID);
-            fileSenders.put(fileID, new Model_File_Sender(file, new File(PATH_FILE + fileID + file.getFileExtension())));
+            fileSenders.put(fileID, new Model_File_Sender(file, new File(PATH_FILE + fileID + ".enc")));
         } else {
             file = fileSenders.get(fileID).getData();
         }
@@ -83,50 +80,16 @@ public class ServiceFile {
         }
     }
 
-    public Model_Send_Message closeFile(Model_Receive_Image dataImage) throws IOException {
-        Model_File_Receiver file = fileReceivers.get(dataImage.getFileID());
-        if (file.getMessage().getMessageType() == MessageType.IMAGE.getValue()) {
-            file.getMessage().setEncryptedContent("");
-            file.getMessage().setEncryptedAESKey("");
-            file.getMessage().setSignature("");
-            convertFileToBlurHash(file.getFile(), dataImage);
-            messageDAO.updateBlur(dataImage.getFileID(), dataImage.getImage(), dataImage.getHeight(), dataImage.getWidth());
-        }
-        fileReceivers.remove(dataImage.getFileID());
-        file.getMessage().setId(dataImage.getFileID());
-        file.getMessage().setBlurHash(dataImage.getImage());
-        file.getMessage().setHeight_blur(dataImage.getHeight());
-        file.getMessage().setWidth_blur(dataImage.getWidth());
+    public Model_Send_Message closeFile(Long fileID) throws IOException {
+        Model_File_Receiver file = fileReceivers.get(fileID);
+        fileReceivers.remove(fileID);
+        file.getMessage().setId(fileID);
+                
         return file.getMessage();
     }
 
-    private void convertFileToBlurHash(File file, Model_Receive_Image dataImage) throws IOException {
-        BufferedImage img = ImageIO.read(file);
-        Dimension size = getAutoSize(new Dimension(img.getWidth(), img.getHeight()), new Dimension(200, 200));
-        BufferedImage newImage = new BufferedImage(size.width, size.height, BufferedImage.TYPE_INT_ARGB);
-        Graphics2D g2 = newImage.createGraphics();
-        g2.drawImage(img, 0, 0, size.width, size.height, null);
-        String blurhash = BlurHash.encode(newImage);
-        dataImage.setWidth(size.width);
-        dataImage.setHeight(size.height);
-        dataImage.setImage(blurhash);
-    }
-
-    private Dimension getAutoSize(Dimension fromSize, Dimension toSize) {
-        int w = toSize.width;
-        int h = toSize.height;
-        int iw = fromSize.width;
-        int ih = fromSize.height;
-        double xScale = (double) w / iw;
-        double yScale = (double) h / ih;
-        double scale = Math.min(xScale, yScale);
-        int width = (int) (scale * iw);
-        int height = (int) (scale * ih);
-        return new Dimension(width, height);
-    }
-
     private File toFileObject(Message file) {
-        return new File(PATH_FILE + file.getId() + file.getFileExtension());
+        return new File(PATH_FILE + file.getId() + ".enc");
     }
 
     private final String PATH_FILE = "server_data/";

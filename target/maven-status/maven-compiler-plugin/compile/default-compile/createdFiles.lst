@@ -26,7 +26,6 @@ com\app\service\ServiceUser.class
 com\app\swing\blurHash\BlurHash.class
 com\app\main\Main$1.class
 com\app\dao\MessageDAO.class
-com\app\model\Model_Receive_Message.class
 com\app\service\Service$2.class
 com\app\service\ServiceMessage.class
 com\app\service\Service$11.class
