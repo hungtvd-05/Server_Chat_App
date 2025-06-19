@@ -5,6 +5,7 @@ import com.app.dao.UserDAO;
 import com.app.model.User;
 import com.app.service.Service;
 import com.app.util.HibernateUtil;
+import com.app.util.MailUtil;
 import com.formdev.flatlaf.FlatLightLaf;
 import javax.swing.UIManager;
 

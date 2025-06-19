@@ -47,7 +47,8 @@ public class UserAccount {
     @Column(name = "status")
     private Boolean status;
     
-    @Column(name = "image")
+    
+    @Column(name = "image", columnDefinition = "LONGTEXT")
     private String image;
     
     @Column(name = "public_key_dsa", columnDefinition = "TEXT")

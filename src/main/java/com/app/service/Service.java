@@ -13,8 +13,12 @@ import com.app.model.Model_Receive_Image;
 import com.app.model.Model_Register;
 import com.app.model.Model_Reques_File;
 import com.app.model.Model_Send_Message;
+import com.app.model.Model_Update_User;
 import com.app.model.TestUserAccount;
 import com.app.model.User;
+import com.app.util.MailUtil;
+import com.app.util.Utils;
+import com.app.util.Validator;
 import com.corundumstudio.socketio.AckRequest;
 import com.corundumstudio.socketio.Configuration;
 import com.corundumstudio.socketio.SocketIOClient;
@@ -23,9 +27,12 @@ import com.corundumstudio.socketio.listener.ConnectListener;
 import com.corundumstudio.socketio.listener.DataListener;
 import com.corundumstudio.socketio.listener.DisconnectListener;
 import java.io.IOException;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import javax.swing.JTextArea;
 
 public class Service {
@@ -35,7 +42,10 @@ public class Service {
     private ServiceUser serviceUser;
     private ServiceMessage serviceMessage;
     private ServiceFile serviceFile;
-    private List<Model_Client> listClient;
+    private ServiceOtp serviceOtp;
+//    private List<Model_Client> listClient;
+    private Map<SocketIOClient, TestUserAccount> clientMap;
+
     private JTextArea textArea;
     private final int PORT_NUMBER = 9999;
 
@@ -51,8 +61,9 @@ public class Service {
         serviceUser = new ServiceUser();
         serviceMessage = new ServiceMessage();
         serviceFile = new ServiceFile();
-        listClient = new ArrayList<>();
         serviceUser.updateAllStatus();
+        serviceOtp = new ServiceOtp();
+        clientMap = new ConcurrentHashMap<>();
     }
 
     public void startServer() {
@@ -67,11 +78,60 @@ public class Service {
                 textArea.append("One client connection\n");
             }
         });
+        
+        server.addEventListener("init_register", Model_Register.class, new DataListener<Model_Register>() {
+            @Override
+            public void onData(SocketIOClient sioc, Model_Register t, AckRequest ar) throws Exception {
+                
+                
+                if (serviceUser.doesUsernameOrEmailExist(t.getUserName(), t.getMail())) {
+                    ar.sendAckData(false,"Invalid username or mail");
+                    return;
+                };
+                   
+                if (!Validator.isValidUsername(t.getUserName()) || false) {
+                    ar.sendAckData(false,"Invalid username");
+                    return;
+                }
+                
+                if (!Validator.isValidFullName(t.getFullName())) {
+                    ar.sendAckData(false,"Invalid fullname");
+                    return;
+                }
+                
+                if (!Validator.isValidEmail(t.getMail()) || false) {
+                    ar.sendAckData(false,"Invalid mail");
+                    return;
+                }
+                
+                if (!Validator.isValidPhone(t.getPhone())) {
+                    ar.sendAckData(false,"Invalid phone");
+                    return;
+                }
+                
+                if (!Validator.isValidPassword(t.getPassword())) {
+                    ar.sendAckData(false,"Invalid password");
+                    return;
+                }
+                
+                String otp = Utils.generateOTP(6);
+                while (!serviceOtp.saveOtp(t.getUserName(), otp, LocalDateTime.now().plusMinutes(10))) {
+                    otp = Utils.generateOTP(6);
+                    System.out.println(otp);
+                }   
+                
+                MailUtil.sendOTP(t.getMail(), otp);
+                
+                ar.sendAckData(true);
+            }
+        });
+        
         server.addEventListener("register", Model_Register.class, new DataListener<Model_Register>() {
             @Override
             public void onData(SocketIOClient sioc, Model_Register t, AckRequest ar) throws Exception {
                 Model_Message message = serviceUser.register(t);
                 ar.sendAckData(message.isAction(), message.getMessage(), message.getData());
+                  
                 if (message.isAction()) {
                     TestUserAccount medata = (TestUserAccount) message.getData();
                     server.getBroadcastOperations().sendEvent("list_user", medata);
@@ -81,6 +141,62 @@ public class Service {
             }
 
         });
+        
+        server.addEventListener("edit_account", Model_Update_User.class, new DataListener<Model_Update_User>() {
+            @Override
+            public void onData(SocketIOClient sioc, Model_Update_User t, AckRequest ar) throws Exception {
+
+                TestUserAccount user = clientMap.get(sioc);
+
+                if (!user.getUserName().equals(t.getUserName())) {
+                    ar.sendAckData(false, "Username mismatch. Unauthorized request.");
+                    return;
+                }
+
+                if (!Validator.isValidFullName(t.getFullName())) {
+                    ar.sendAckData(false, "Full name must be at least 2 characters.");
+                    return;
+                }
+
+                if (!Validator.isValidEmail(t.getMail())) {
+                    ar.sendAckData(false, "Invalid email format.");
+                    return;
+                }
+
+                if (!Validator.isValidPhone(t.getPhone())) {
+                    ar.sendAckData(false, "Phone number must be 9 to 11 digits.");
+                    return;
+                }
+
+                if (t.getCurrentPassword().isEmpty() && t.getNewPassword().isEmpty() && t.getConfirmNewPassword().isEmpty()) {
+                    user.update(t);
+                    serviceUser.updateUserAccountInfo(user);
+                    ar.sendAckData(true, user);
+                } else {
+                    if (!serviceUser.checkPassword(t.getUserName(), t.getCurrentPassword())) {
+                        ar.sendAckData(false, "Current password is incorrect.");
+                        return;
+                    }
+
+                    if (!Validator.isValidPassword(t.getNewPassword())) {
+                        ar.sendAckData(false, "New password must be at least 6 characters and contain both letters and digits.");
+                        return;
+                    }
+
+                    if (!Validator.isPasswordConfirmed(t.getNewPassword(), t.getConfirmNewPassword())) {
+                        ar.sendAckData(false, "New password and confirmation do not match.");
+                        return;
+                    }
+
+                    serviceUser.changePassword(t.getUserName(), t.getNewPassword());
+                    user.update(t);
+                    serviceUser.updateUserAccountInfo(user);
+                    clientMap.replace(sioc, user);
+                    ar.sendAckData(true, user);
+                    }
+                    clientMap.replace(sioc, user);
+                }
+            });
         server.addEventListener("login", Model_Login.class, new DataListener<Model_Login>() {
             @Override
             public void onData(SocketIOClient sioc, Model_Login t, AckRequest ar) throws Exception {
@@ -250,17 +366,12 @@ public class Service {
     }
 
     private void addClient(SocketIOClient client, TestUserAccount user) {
-        listClient.add(new Model_Client(client, user));
+        clientMap.put(client, user);
     }
 
     public long removeClient(SocketIOClient client) {
-        for (Model_Client d : listClient) {
-            if (d.getClient() == client) {
-                listClient.remove(d);
-                return d.getUser().getUserId();
-            }
-        }
-        return 0;
+        TestUserAccount removed = clientMap.remove(client);
+        return removed != null ? removed.getUserId() : 0;
     }
 
     private void sendToClient(Model_Send_Message data, AckRequest ar) {
@@ -279,12 +390,11 @@ public class Service {
             
             ar.sendAckData(saveMessage.getId());
 
-            for (Model_Client c : listClient) {
-                if (c.getUser().getUserId() == data.getToUserID()) {
+            for (Map.Entry<SocketIOClient, TestUserAccount> entry : clientMap.entrySet()) {
+                if (entry.getValue().getUserId() == data.getToUserID()) {
                     data.setId(saveMessage.getId());
                     data.setPubkeyDSAFromUser(saveMessage.getPublicKeyDSAFromUser());
-                    System.out.println(data);
-                    c.getClient().sendEvent("receive_ms", data);
+                    entry.getKey().sendEvent("receive_ms", data);
                     textArea.append(data.getEncryptedContent() + "\n");
                     break;
                 }
@@ -293,12 +403,9 @@ public class Service {
     }
 
     private void sendTempFileToClient(Model_Send_Message data) {
-        for (Model_Client c : listClient) {
-            if (c.getUser().getUserId() == data.getToUserID()) {
-                
-                
-                
-                c.getClient().sendEvent("receive_ms", data);
+        for (Map.Entry<SocketIOClient, TestUserAccount> entry : clientMap.entrySet()) {
+            if (entry.getValue().getUserId() == data.getToUserID()) {
+                entry.getKey().sendEvent("receive_ms", data);
                 break;
             }
         }

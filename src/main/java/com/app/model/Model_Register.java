@@ -18,5 +18,6 @@ public class Model_Register {
     private String phone;
     private String pubkeyDSA; 
     private String pubkeyRSA;
+    private String otp;
 
 }

@@ -18,4 +18,12 @@ public class TestUserAccount {
     private String image;
     private String pubkeyDSA; 
     private String pubkeyRSA;
+    
+    public void update(Model_Update_User update) {
+        this.fullName = update.getFullName();
+        this.mail = update.getMail();
+        this.phone = update.getPhone();
+        this.gender = update.getGender();
+        this.image = update.getImage();
+    }
 }

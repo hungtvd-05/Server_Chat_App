@@ -1,14 +1,18 @@
 package com.app.service;
 
 import com.app.connection.DatabaseConnection;
+import com.app.dao.OtpDAO;
 import com.app.dao.UserDAO;
 import com.app.model.Model_Login;
 import com.app.model.Model_Message;
 import com.app.model.Model_Public_Key;
 import com.app.model.Model_Register;
+import com.app.model.Otp;
 import com.app.model.TestUserAccount;
 import com.app.model.User;
 import com.app.model.UserAccount;
+import com.app.util.PasswordUtil;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import org.mindrot.jbcrypt.BCrypt;
@@ -16,14 +20,31 @@ import org.mindrot.jbcrypt.BCrypt;
 public class ServiceUser {
 
     private UserDAO userDAO = new UserDAO();
+    
+    public void updateUserAccountInfo(TestUserAccount testUserAccount) {
+        User user = userDAO.findById(testUserAccount.getUserId()).join();
+        if (user != null) {
+            UserAccount account = user.getUserAccount();
+            account.setFullName(testUserAccount.getFullName());
+            account.setMail(testUserAccount.getMail());
+            account.setPhone(testUserAccount.getPhone());
+            account.setGender(testUserAccount.getGender());
+            account.setImage(testUserAccount.getImage());
+            userDAO.updateUserAccount(account).join();
+            user.setMail(testUserAccount.getMail());
+            userDAO.save(user).join();
+        }
+    }
 
     public Model_Message register(Model_Register data) {
         Model_Message message = new Model_Message();
         try {
-            User user = userDAO.findByUsernameOrEmail(data.getUserName(), data.getMail()).join();
-            if (user != null) {
+            OtpDAO otpDAO = new OtpDAO();
+            Otp otp = otpDAO.getOtpByUsername(data.getUserName()).join();
+            
+            if (!otp.getOtpCode().equals(data.getOtp()) || LocalDateTime.now().isAfter(otp.getExpiredAt())) {
                 message.setAction(false);
-                message.setMessage("Người dùng đã tồn tại");
+                message.setMessage("Invalid otp");
             } else {
                 System.out.println("dang ky");
                 message.setAction(true);
@@ -52,10 +73,10 @@ public class ServiceUser {
                 ));
             }
         } catch (Exception e) {
+            System.err.println(e);
             message.setAction(false);
             message.setMessage("Lỗi máy chủ: " + e.getMessage());
         }
-//        System.out.println(message.getMessage());
         return message;
     }
 
@@ -86,6 +107,38 @@ public class ServiceUser {
     
     public void changePublicKey(Model_Public_Key mpk) {
         userDAO.changeKey(mpk.getUserID(), mpk.getDsa_public_key(), mpk.getRsa_public_key());
+    }
+    
+    public boolean checkPassword(String username, String password) {
+        User user = userDAO.findByUsernameOrEmail(username, null).join();
+        return PasswordUtil.checkPassword(password, user.getPassword());
+    }
+    
+    public boolean doesUsernameOrEmailExist(String username, String email) {
+        try {
+            User user = userDAO.findByUsernameOrEmail(username, email).join();
+            return user != null;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return true;
+        }
+    }
+    
+    
+    public boolean changePassword(String username, String newPassword) {
+
+        User user = userDAO.findByUsernameOrEmail(username, null).join();
+        if (user == null) {
+            throw new IllegalArgumentException("User not found.");
+        }
+
+        String hashedPassword = PasswordUtil.hashPassword(newPassword);
+
+        // 3. Cập nhật
+        user.setPassword(hashedPassword);
+        userDAO.save(user);
+
+        return true;
     }
 
     public List<TestUserAccount> getUser(long exitUser) {

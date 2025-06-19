@@ -2,6 +2,7 @@ package com.app.dao;
 
 import com.app.model.TestUserAccount;
 import com.app.model.User;
+import com.app.model.UserAccount;
 import com.app.util.HibernateUtil;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -16,9 +17,9 @@ public class UserDAO {
             Transaction transaction = null;
             try (Session session = HibernateUtil.getSessionFactory().openSession()) {
                 transaction = session.beginTransaction();
-                session.persist(user);
+                User savedUser = session.merge(user);  // Gán lại
                 transaction.commit();
-                return user;
+                return savedUser;
             } catch (Exception e) {
                 if (transaction != null && transaction.isActive()) {
                     HibernateUtil.rollbackTransaction(transaction);
@@ -27,6 +28,25 @@ public class UserDAO {
             }
         });
     }
+    
+    public CompletableFuture<UserAccount> updateUserAccount(UserAccount account) {
+    return CompletableFuture.supplyAsync(() -> {
+        Transaction transaction = null;
+        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+            transaction = session.beginTransaction();
+
+            UserAccount mergedAccount = (UserAccount) session.merge(account);
+
+            transaction.commit();
+            return mergedAccount;
+        } catch (Exception e) {
+            if (transaction != null && transaction.isActive()) {
+                transaction.rollback();
+            }
+            throw new RuntimeException("Lỗi khi cập nhật UserAccount: " + e.getMessage(), e);
+        }
+    });
+}
 
     public CompletableFuture<User> findByUsernameOrEmail(String username, String email) {
         return CompletableFuture.supplyAsync(() -> {
