@@ -79,6 +79,8 @@ public class Service {
             }
         });
         
+        
+        
         server.addEventListener("init_register", Model_Register.class, new DataListener<Model_Register>() {
             @Override
             public void onData(SocketIOClient sioc, Model_Register t, AckRequest ar) throws Exception {
@@ -236,6 +238,7 @@ public class Service {
             @Override
             public void onData(SocketIOClient sioc, Model_Send_Message t, AckRequest ar) throws Exception {
                 System.out.println(t);
+                
                 sendToClient(t, ar);
             }
         });
@@ -348,6 +351,15 @@ public class Service {
                 }
             }
         });
+        
+        server.addEventListener("update_status", TestUserAccount.class, new DataListener<TestUserAccount>() {
+            @Override
+            public void onData(SocketIOClient sioc, TestUserAccount t, AckRequest ar) throws Exception {
+                addClient(sioc, t);
+                userConnect(t.getUserId());
+            }
+        });
+        
         server.start();
         textArea.append("Server has start on port: " + PORT_NUMBER + "\n");
     }

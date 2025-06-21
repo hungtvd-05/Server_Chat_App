@@ -3,6 +3,7 @@ com\app\util\MailUtil$1.class
 com\app\model\Model_Status.class
 com\app\service\Service$6.class
 com\app\model\User.class
+com\app\service\Service$15.class
 com\app\swing\blurHash\SRGB.class
 com\app\service\ServiceOtp.class
 com\app\dao\OtpDAO.class
