@@ -25,6 +25,7 @@ com\app\util\Validator.class
 com\app\service\Service$14.class
 com\app\util\HibernateUtil.class
 com\app\model\Model_Register.class
+com\app\model\Model_Sending_Status.class
 com\app\model\Model_File_Sender.class
 com\app\service\Service$5.class
 com\app\service\Service$10.class
@@ -44,6 +45,7 @@ com\app\util\PasswordUtil.class
 com\app\model\Model_File.class
 com\app\service\Service$13.class
 com\app\model\Message.class
+com\app\service\Service$16.class
 com\app\swing\blurHash\BlurHash.class
 com\app\main\Main$1.class
 com\app\service\ServiceMessage.class

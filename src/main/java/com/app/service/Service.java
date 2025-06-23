@@ -13,6 +13,7 @@ import com.app.model.Model_Receive_Image;
 import com.app.model.Model_Register;
 import com.app.model.Model_Reques_File;
 import com.app.model.Model_Send_Message;
+import com.app.model.Model_Sending_Status;
 import com.app.model.Model_Update_User;
 import com.app.model.TestUserAccount;
 import com.app.model.User;
@@ -78,6 +79,23 @@ public class Service {
                 textArea.append("One client connection\n");
             }
         });
+        
+        server.addEventListener("user_typing", Model_Sending_Status.class, new DataListener<Model_Sending_Status>() {
+            @Override
+            public void onData(SocketIOClient sioc, Model_Sending_Status mss, AckRequest ar) {
+                
+
+                String toUsername = mss.getToUsername();
+
+                for (Map.Entry<SocketIOClient, TestUserAccount> entry : clientMap.entrySet()) {
+                    if (entry.getValue().getUserName().equals(toUsername)) {
+                        entry.getKey().sendEvent("user_typing", mss);
+                        break;
+                    }
+                }
+            }
+        });
+        
         
         
         
